@@ -27,6 +27,7 @@ class Manager:
         return self.processes[tag]
 Manager=Manager()
 
+
 class StoppableThread(threading.Thread):
     def __init__(self,  *args, **kwargs):
         super(StoppableThread, self).__init__(*args, **kwargs)
@@ -43,6 +44,7 @@ def darken(screen):
         screen.fill((0, 0, 0, opacity))
         pygame.display.update()
         time.sleep(0.01)
+
 
 def event():
     def event_handler():
@@ -66,6 +68,8 @@ class Resources:
 
     def source_path(self,path):
         return os.path.abspath(os.path.join(self.SOURCEPATH, path))
+    
+    
     def getfile(self,filename):
         if filename in os.listdir(self.dir):
             return open(os.path.join(self.dir,filename),'r')
@@ -137,10 +141,41 @@ class Level:
             print("No intro")
 
     def load(self):
+        self.level=self.level()    
         self.load_intro()
-        self.level.load()
-        
-	
+        try:
+            self.level.load_once()
+        except AttributeError:
+            pass
+        try:
+            self.level.load()
+        except AttributeError:
+            print("No load function in Level")
+
+class LevelManager:
+    def __init__(self):
+        self.levels={}
+        self._skip=[]
+        self.current_level=""
+
+    def add(self,level):
+        self.levels[level.level.__name__]=level
+
+    def skip(self,levels):
+        for skip in levels:
+            self._skip.append(skip)
+
+    def start(self):
+        for level in self.levels:
+            if self.levels[level] in self._skip:
+                continue
+            else:
+                self.levels[level].load()
+
+    def play(self,level):
+        self.current_level=level
+        self.levels[level].load()
+
 class Json:
     def __init__(self,file:os.path):
         self.filename=file
