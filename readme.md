@@ -8,5 +8,5 @@ Bu proje hala yapım aşamasındadır.
 
 ### Önemli Dosyalar
 
-[README.md](readme.md) - Bilgilendirme Dosyası
-[LICENSE](LICENSE) - Lisans Dosyası
+[README.md](readme.md) - Bilgilendirme Dosyası<br>
+[LICENSE](LICENSE) - Lisans Dosyası<br>
