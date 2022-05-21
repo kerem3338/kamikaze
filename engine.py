@@ -3,6 +3,7 @@ import os
 import pygame
 import inspect
 import time
+import threading
 import sys
 from pathlib import Path
 
@@ -12,6 +13,51 @@ pygame.init()
 bg_color = pygame.Color("black")
 global current_level
 current_level = ""
+
+class Manager:
+    def __init__(self):
+        self.processes = {}
+    def add(self,tag:str,process):
+        self.processes[tag] = process
+
+    def addthread(self,tag:str,process):
+        self.processes[tag] = threading.Thread(target=process)
+
+    def get(self,tag:str):
+        return self.processes[tag]
+Manager=Manager()
+
+class StoppableThread(threading.Thread):
+    def __init__(self,  *args, **kwargs):
+        super(StoppableThread, self).__init__(*args, **kwargs)
+        self._stop_event = threading.Event()
+
+    def stop(self):
+        self._stop_event.set()
+
+    def stopped(self):
+       return self._stop_event.is_set()
+
+def darken(screen):
+    for opacity in range(0,255,5):
+        screen.fill((0, 0, 0, opacity))
+        pygame.display.update()
+        time.sleep(0.01)
+
+def event():
+    def event_handler():
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                quit()
+
+        pygame.event.get()
+    StoppableThread(target=event_handler).start()
+    Manager.add("bg_event",StoppableThread(target=event_handler))
+    Manager.get("bg_event").start()
+
+def kill_event():
+    Manager.get("bg_event").stop()
 
 class Resources:
     def __init__(self,dir:os.path):
@@ -25,6 +71,7 @@ class Resources:
             return open(os.path.join(self.dir,filename),'r')
         else:
             raise FileNotFoundError("File not found in Resources directory: "+filename)
+
 class Text:
     def __init__(self, text, pos, font_size=20, color=pygame.Color("white")):
         self.text = text
@@ -35,14 +82,26 @@ class Text:
         self.surface = self.font.render(self.text, True, self.color)
         self.rect = self.surface.get_rect()
         self.rect.center = self.pos
+    def update_pos(self, pos):
+        self.pos = pos
+        self.rect.center = self.pos
+    def update_text(self, text):
+        self.text = text
+        self.surface = self.font.render(self.text, True, self.color)
+        self.rect = self.surface.get_rect()
+        self.rect.center = self.pos
+
     def render(self,screen:pygame.Surface):
         screen.blit(self.surface,self.rect)
 
 
+
 class Level:
-    def __init__(self,level,screen:pygame.Surface):
+    def __init__(self,level,screen:pygame.Surface,console=False):
         self.level = level
         self.screen = screen
+        self.console=console
+        self.log=""
         self.load()
 
     def load_intro(self):
@@ -51,8 +110,12 @@ class Level:
             timer_start=time.time()
            
             while True:
-                if time.time()-timer_start>=2:
-                    break
+                if "wait" in self.level.intro:
+                    if time.time()-timer_start>self.level.intro["wait"]:
+                        break
+                else:
+                    if time.time()-timer_start>=3:
+                        break
                 for i in pygame.event.get():
                     if i.type == pygame.QUIT:
                         pygame.quit()
@@ -66,9 +129,12 @@ class Level:
                 pygame.time.delay(10)
                 pygame.display.flip()
                 
-            print("Level intro finished")
+            if self.console:
+                print("Intro finished")
+
         else:
             print("No intro for this level")
+
     def load(self):
         self.load_intro()
         self.level.load()
@@ -77,9 +143,10 @@ class Level:
 class Json:
     def __init__(self,file:os.path):
         self.filename=file
-        self.file=open(file,"w",encoding="utf-8")
-        self.json_data=json.load(self.file.read())
+        self.file=open(file,"r",encoding="utf-8")
+        self.json_data=json.load(self.file)
 
+    
     def delete(self,object):
         del self.json_data[object]
         self.file.seek(0)
