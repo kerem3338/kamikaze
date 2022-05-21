@@ -102,10 +102,11 @@ class Level:
         self.screen = screen
         self.console=console
         self.log=""
-        self.load()
+        
 
     def load_intro(self):
-        if self.level.__dict__.get("intro"):
+        """Loads Level Intro"""
+        if self.level.__dict__.get("intro") or hasattr(self.level,"intro"):
             t=Text(self.level.intro["text"],(self.screen.get_width()//2,self.screen.get_height()//2))
             timer_start=time.time()
            
@@ -133,7 +134,7 @@ class Level:
                 print("Intro finished")
 
         else:
-            print("No intro for this level")
+            print("No intro")
 
     def load(self):
         self.load_intro()
@@ -165,6 +166,8 @@ class Json:
 class Player:
     def __init__(self,screen):
         self.screen=screen
+        self.border_check=False
+        self.speed=32
         self.player_data={
             "location": {"x": 0, "y": 0},
             "inventory": [],
@@ -180,26 +183,31 @@ class Player:
     def update_rect(self):
         self.player=pygame.Rect(self.player_data["location"]["x"],self.player_data["location"]["y"],32,32)
 
-    def check_border_collision(self):
-        if self.player.x < 0:
-            self.player.x = 0
-        elif self.player.x > self.screen.get_width() - self.player.width:
-            self.player.x = self.screen.get_width() - self.player.width
-        if self.player.y < 0:
-            self.player.y = 0
-        elif self.player.y > self.screen.get_height() - self.player.height:
-            self.player.y = self.screen.get_height() - self.player.height
-
-    def move(self,direction):
+    def check_border_collision(self,setpos:bool=True):
+        if setpos:
+            if self.player.x < 0:
+                self.player.x = 0
+            elif self.player.x > self.screen.get_width() - self.player.width:
+                self.player.x = self.screen.get_width() - self.player.width
+            if self.player.y < 0:
+                self.player.y = 0
+            elif self.player.y > self.screen.get_height() - self.player.height:
+                self.player.y = self.screen.get_height() - self.player.height
+        else:
+            if self.player.x < 0 or self.player.x > self.screen.get_width() - self.player.width or self.player.y < 0 or self.player.y > self.screen.get_height() - self.player.height:
+                return True
+    def move(self,direction,speed=32):
         if direction=="up":
-            self.player_data["location"]["y"]-=32
+            self.player_data["location"]["y"]-=speed
         elif direction=="down":
-            self.player_data["location"]["y"]+=32
+            self.player_data["location"]["y"]+=speed
         elif direction=="left":
-            self.player_data["location"]["x"]-=32
+            self.player_data["location"]["x"]-=speed
         elif direction=="right":
-            self.player_data["location"]["x"]+=32
+            self.player_data["location"]["x"]+=speed
         self.update_rect()
+        if self.border_check:
+            self.check_border_collision()
 class Solid:
     def __init__(self,x,y,width,height,color:pygame.Color):
         self.solid=pygame.Rect(x,y,width,height)

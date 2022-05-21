@@ -43,23 +43,38 @@ class Story2:
     intro={"text":"Bölüm 1"}
     def load():
         pl=engine.Player(screen)
+
         while True:
             for i in pygame.event.get():
                 if i.type == pygame.QUIT:
                     pygame.quit()
                     quit()
                 if i.type == pygame.KEYDOWN:
-                    if i.key == pygame.K_UP:
-                        pl.move_up()
-                    if i.key == pygame.K_DOWN:
-                        pl.move_down()
                     if i.key == pygame.K_LEFT:
-                        pl.move_left()
+                        pl.move("left",16)
                     if i.key == pygame.K_RIGHT:
-                        pl.move_right()
-        print("breaked")
+                        pl.move("right",16)
+            
+            if pl.check_border_collision(False):
+                break
+            pl.check_border_collision()
+            screen.fill(engine.bg_color)
+            pl.draw()
+            pygame.display.update()
+            pygame.time.delay(10)
+            pl.move("down",0.5)
+
+            
+class Story3:
+    def __init__(self):
+        self.intro={"text":"Bölüm 2"}
+    def load():
+        print("ok")
+        sys.exit()
+
 story=engine.Level(Story,screen)
 story2=engine.Level(Story2,screen)
+story3=engine.Level(Story3,screen)
 
-story.load()
-story2.load()
+#story.load()
+story3.load()
